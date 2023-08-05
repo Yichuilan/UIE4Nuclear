@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>Awesome search Box</title>
+		<link href="https://cdn.bootcss.com/font-awesome/5.8.0/css/all.css" rel="stylesheet" />
+		<style>
+            body {
+				margin: 0;
+				padding: 0;
+				display: flex;
+				justify-content: center;
+                align-items: center;
+				min-height: 100vh;
+                {#background:#3498db;#}
+				{#background: #060c21;#}
+				background: #CEE1F0;
+                font-family: 'Poppins', sans-serif;
+                flex-flow: column;
+			}
+            .search-upper{
+                min-height:120px;
+                width:100%;
+                display:flex;
+                flex-direction: column;
+            }
+            .search-box{
+                min-height: 40px;
+                /* border-radius: 40px; */
+                padding: 10px;
+                margin-left:30%;
+                margin-right:30%;
+                display: flex;
+                flex-direction: column;
+            }
+			.search-box .btn {
+
+				width: 80px;
+				display: flex;
+				justify-content: center;
+                margin-left:510px;
+			}
+            .search-txt {
+                border: none;
+                background: black;
+                /* outline: none; */
+                /* float: left; */
+                padding: 10px;
+                color: #ffffff;
+                font-size: 16px;
+                transition: 0.4s;
+                line-height: 40px;
+                border-radius: 40px;
+                margin: 3px;
+                display: flex;
+                justify-content: center;
+            }
+            .upper {
+				width: 1000px;
+                min-height: 10px;
+				align-items: center;
+				justify-content: center;
+				display: flex;
+            }
+            .box {
+                border-radius: 25px;
+				position: relative;
+				width: 800px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				background: #E6E6E6;
+			}
+			/* 用box的伪元素添加一个面积比box略大的矩形,并通过改变层叠次序,置于box的下层,达到给box设置边框的效果 */
+			.box::before {
+				content: '';
+				position: absolute;
+				top: -2px;
+				left: -2px;
+				right: -2px;
+				bottom: -2px;
+				background: #fff;
+				z-index: -1;
+			}
+			/* 于上面类似,做一个面积比box略大的矩形,并通过改变层叠次序,置于box的下层,达到给box设置边框的效果 */
+			.box::after {
+				content: '';
+				position: absolute;
+				top: -2px;
+				left: -2px;
+				right: -2px;
+				bottom: -2px;
+				background: #fff;
+				z-index: -2;
+				/* 滤镜属性  给图像设置高斯模糊。"radius"一值设定高斯函数的标准差，或者是屏幕上以多少像素融在一起，所以值越大越模糊；如果没有设定值，则默认是0；这个参数可设置css长度值，但不接受百分比值。 */
+				filter: blur(40px);
+			}
+			.box::before,
+			.box::after {
+				/* linear-gradient() 函数用于创建一个线性渐变的 "图像"。 参数1:用角度值指定渐变的方向（或角度）  12点钟方向为0deg*/
+                border-radius: 25px;
+				background: linear-gradient(235deg, #89ff00, #060c21, #00bcd4);
+			}
+			.content {
+				padding: 20px;
+				box-sizing: border-box;
+                width: 100%;
+				color: #333333;
+			}
+            .chart{
+                width: 100%;
+                height:600px;
+            }
+            .button-upper{
+                margin-top:8px;
+            }
+            .btn{
+                  display: inline-block;
+                  padding: 10px 20px;
+                  font-size: 16px;
+                  font-weight: bold;
+                  text-align: center;
+                  text-decoration: none;
+                  background-color: #2f3640;
+                  color: #ffffff;
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            }
+            .btn:hover {
+                background-color: #0056b3;
+            }
+            .file-box {
+               display: flex;
+               flex-direction: row;
+               align-items: center;
+               padding: 20px;
+               border-radius: 5px;
+            }
+
+            input[type="file"] {
+              display: none;
+            }
+            .upper a{
+                margin-bottom: 6px;
+            }
+
+
+            label.upload-button:hover {
+              background-color: #3367d6;
+            }
+
+		</style>
+	</head>
+	<body>
+        <div class="button-upper">
+            <button class="btn" onclick="addInput()">+</button>
+            <button class="btn" onclick="subInput()">-</button>
+        </div>
+        <div id="myUpper" class="search-upper">
+            <form id="myForm" action="/process" method="POST" class="search-box">
+                <input class="search-txt" name="ptext1" type="text" placeholder="句子1" />
+                <input id="myButton" class="btn" type="submit"  value="文本抽取"/>
+            </form>
+        </div>
+        <div class="upper">
+            <form action="/upload" method="post" enctype="multipart/form-data" class="file-box">
+                        <label class="btn" for="fileInput">选择文件</label>
+                        <input type="file" id="fileInput" name="file" accept=".xlsx" />
+                        <div id="selected-file">未选择文件</div>
+                        <button type="submit" class="btn">文件抽取</button>
+            </form>
+        </div>
+        <div class="upper">
+            <a href="/download">点击下载结果文件</a>
+        </div>
+        <div class="upper">
+            <div class="box">
+                <div class="content">
+                    <p>
+                        {% for key, value in data.items() %}
+                            {% if key == 'e' %}
+                                {%  for k1,v1 in value.items() %}
+                                    实体“{{k1}}”含有：{{v1}}
+                                    <br>
+                                {%  endfor %}
+                                <hr />
+                            {% else %}
+                                {%  for k1,v1 in value.items() %}
+                                    关系“{{k1}}”含有：{{v1}}
+                                    <br>
+                                {%  endfor %}
+                            {% endif %}
+                        {% endfor %}
+                        </p>
+                </div>
+            </div>
+        </div>
+        <div id="chartContainer" class="chart"></div>
+        <script type="text/javascript">
+            // 定义知识图谱的节点和关系数据
+            var re_color={"存在":'black',"导致":'blue',"包含":'green',"解决":'red'};
+            var categories=[];
+            var chart = echarts.init(document.getElementById('chartContainer'));
+            var nodes=[];
+            var temp_dict={};
+            idx=0;
+            {% for key, value in dict.items() %}
+                nodes.push({
+                    id: idx,
+                    name: '{{ key }}' ,
+                    symbolSize: 30,
+                    category:'{{ value }}',
+                });
+                if (!categories.includes({name:"{{ value }}"}))categories.push({name:"{{ value }}"});
+                temp_dict['{{ key }}']=idx;
+                idx+=1;
+            {% endfor %}
+            var links=[]
+            var n1,n2,n3;
+            var i=0;
+            {% for value in relation %}
+                i=0;
+                {% for item in value %}
+                    if(i==0){n1='{{ item }}';n1=temp_dict[n1]}
+                    else if(i==1) {n2='{{ item }}';n2=temp_dict[n2];}
+                    else {n3='{{ item }}';}
+                    i++;
+                {% endfor %}
+                links.push({
+                    source:n1,
+                    target:n2,
+                    label: {show: true,formatter: n3},
+                    lineStyle:{
+                        color:re_color[n3]
+                    },
+                    category:n3
+                });
+            {% endfor %}
+
+            var option = {
+                legend: [{
+                    // selectedMode: 'single',
+                    //设置可以根据类别显示or隐藏节点
+                    data: categories.map(function (a) {
+                        return a.name;
+                    })
+                }],
+                series: [{
+                      type: 'graph',
+                      layout: 'force',
+                      force: {
+                        repulsion: 100 // 节点之间的斥力
+                      },
+                      data: nodes,
+                      links: links,
+                      roam: true, // 允许拖拽和缩放
+                      label: {
+                        show: true,
+                        position: 'top'
+                      },
+                      itemStyle: {
+                        borderColor: '#555',
+                        borderWidth: 1
+                      },
+                      draggable: true, // 节点可拖拽
+                      focusNodeAdjacency: false, // 鼠标悬停节点时高亮相邻的边和节点
+                      edgeSymbol: ['circle', 'arrow'], // 边的两个端点的标记类型
+                      edgeSymbolSize: [4, 10] ,// 边的两个端点的标记大小
+                      categories: categories
+                    }]
+            };
+
+            // 监听节点拖拽事件
+            chart.on('drag', function (params) {
+              // 当节点拖拽时，可以在这里执行相应的逻辑操作
+              console.log('节点拖拽事件:', params);
+            });
+
+            // 渲染图表
+            chart.setOption(option);
+        </script>
+        <script>
+            function addInput() {
+                // 获取表单元素
+                var form = document.getElementById("myForm");
+                // 获取所有输入框元素
+                var button = document.getElementById('myButton');
+                var inputElements = form.getElementsByTagName("input");
+                // 创建新的输入框
+                var newIndex = inputElements.length;
+                var newInput = document.createElement("input");
+                newInput.type = "text";
+                newInput.name = "ptext" + newIndex;
+                newInput.placeholder = '句子' + newIndex;
+                newInput.className='search-txt';
+                // 添加新的输入框到表单
+                form.appendChild(newInput);
+                form.insertBefore(newInput,button);
+            }
+            function subInput(){
+                // 获取表单元素
+                var form = document.getElementById("myForm");
+                // 获取所有输入框元素
+                var inputElements = form.getElementsByTagName("input");
+                var inputToDelete = null; // 要删除的输入框元素
+                // 遍历所有输入框，找到最小的索引值以及要删除的输入框
+                if(inputElements.length>=2)inputToDelete = inputElements[inputElements.length-2];
+                // 如果找到要删除的输入框，则从表单中移除它
+                if (inputToDelete) {
+                    form.removeChild(inputToDelete);
+                }
+            }
+        </script>
+        <script>
+            const fileInput = document.getElementById('fileInput');
+            const selectedFile = document.getElementById('selected-file');
+
+            fileInput.addEventListener('change', function() {
+              const fileName = this.files[0].name;
+              selectedFile.textContent = `已选择文件：${fileName}`;
+            });
+        </script>
+	</body>
+</html>
