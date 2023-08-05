@@ -1,0 +1,7 @@
+index,uuid,driver_version,name,gpu_serial,display_active,display_mode
+0,GPU-3995f84b-1d5a-0565-4687-c5e88db14fff,517.00,NVIDIA GeForce RTX 2060,[N/A],Disabled,Disabled
+
+pid,process_name,gpu_uuid,gpu_name,used_memory
+
+index,utilization_gpu,memory_total,memory_used,memory_free,timestamp
+0,0,6144,0,5980,2023/04/14 20:52:33.407
