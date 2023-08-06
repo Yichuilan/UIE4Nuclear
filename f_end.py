@@ -6,7 +6,7 @@ import chardet
 from paddlenlp import Taskflow
 import pandas as pd
 schema={'组件': ['存在','包含'],'原因': ['导致'],'解决方案': ['解决'],"故障":[]}#'./re_pretrained/best'
-ie = Taskflow(task='information_extraction', schema=schema,task_path='./UIE')
+ie = Taskflow(task='information_extraction', schema=schema,task_path='./UIE-clean')
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 app.config['JSONIFY_MIMETYPE'] = "application/json;charset=utf-8"
@@ -36,6 +36,17 @@ def process_e_r(out_data,js,entity,relation,con):
             out_data = pd.merge(out_data, temp_data, on='故障', how='outer')
     return out_data
 
+def new_process_e_r(out_data,all,relation,entity):
+    temp_dict = {'故障': [], entity: []}
+    for i in all['r'][relation]:
+        temp_dict['故障'].append(i[1])
+        temp_dict[entity].append(i[0])
+    if out_data is None:
+        out_data = pd.DataFrame(temp_dict)
+    else:
+        temp_data = pd.DataFrame(temp_dict)
+        out_data = pd.merge(out_data, temp_data, on='故障', how='outer')
+    return out_data
 ################
 #用set代替，存储所有实体及关系
 def get_e_r(req):
@@ -47,9 +58,6 @@ def get_e_r(req):
         # 在这里执行对文本的处理操作
         num = i + 1
         x = ie(req.form.get('ptext' + str(num)))
-        out_data=process_e_r(out_data, x, '组件','存在', i)
-        out_data=process_e_r(out_data, x, '原因','导致', i)
-        out_data=process_e_r(out_data, x, '解决方案','解决', i)
         for entity in x[0]:
             for e_item in x[0][entity]:
                 all['e'][entity].add(e_item['text'])
@@ -57,26 +65,53 @@ def get_e_r(req):
                     for relation in e_item['relations']:
                         for r_item in e_item['relations'][relation]:
                             all['r'][relation].add((e_item['text'],r_item['text']))
+    out_data = new_process_e_r(out_data, all, '存在', '组件')
+    out_data = new_process_e_r(out_data, all, '导致', '原因')
+    out_data = new_process_e_r(out_data, all, '解决', '解决方案')
+
+    equal_rows = out_data[out_data['解决方案'] == out_data['原因']]
+    a_values_to_remove = equal_rows['解决方案'].unique()
+    del_rows = out_data['解决方案'].isin(a_values_to_remove)
+    out_data.loc[del_rows[del_rows].index, '解决方案'] = None
+
+    # out_csv的处理部分
+    column_names = out_data.columns.tolist()
+    for m in ("组件", "故障", "解决方案", "原因"):
+        if m not in column_names:
+            out_data = out_data.assign(**{m: None})
+    out_data = out_data.drop_duplicates()
+    desired_order = ["组件", "故障", "原因", "解决方案"]
+    out_data = out_data.reindex(columns=desired_order)
+    out_data.to_excel('output.xlsx', index=False)
     return all,out_data
 
-def get_mi(res):
+def get_mi(out_data):
     d={}
-    r_l=[]
-    for entity in res['e']:
-        for item in res['e'][entity]:
+    r_l=set()
+    #["组件", "故障", "原因", "解决方案"]
+    re_map=['存在','xx','导致','解决']
+    ent_map = ["组件", "xx", "原因", "解决方案"]
+    #for ent
+    for column_name, column_data in out_data.items():
+        temp_set = set()
+        for column_item in column_data:
+            if isinstance(column_item, str):
+                temp_set.add(column_item)
+        for item in temp_set:
             if item not in d:
-                d[item]=entity
-            elif item in d:
-                d[item]=d[item]+'+'+entity
-    for relation in res['r']:
-        for item in res['r'][relation]:
-            if item[0] not in d:
-                d[item[0]]="其他"
-            if item[1] not in d:
-                d[item[1]]="其他"
-            r_l.append((item[0],item[1],relation))
-    return d,r_l
-
+                d[item] = column_name
+            else:
+                d[item] = d[item] + '+' + column_name
+    # ["组件", "故障", "原因", "解决方案"]
+    # for ent
+    for index, row in out_data.iterrows():
+        for i in range(4):
+            if i == 1:
+                continue
+            ent = row[ent_map[i]]
+            if isinstance(ent, str):
+                r_l.add((ent, row['故障'], re_map[i]))
+    return d,list(r_l)
 #根据实体类型，节点有四种颜色，同时也有未识别出的实体是另一种颜色（常见于关系中的目标对象）
 #关系有四种颜色
 @app.route('/')
@@ -90,22 +125,12 @@ def login():
 @app.route('/process', methods=['POST','GET'])
 def process():
     response,out_data =get_e_r(request)
-    map_index,r_index=get_mi(response)
+    map_index,r_index=get_mi(out_data)
     #将set()转化为None
     for key in response:
         for er in response[key]:
             if len(response[key][er])==0:
                 response[key][er]={}
-
-    #out_csv的处理部分
-    column_names = out_data.columns.tolist()
-    for m in ("组件", "故障", "解决方案", "原因"):
-        if m not in column_names:
-            out_data = out_data.assign(**{m: None})
-    out_data = out_data.drop_duplicates()
-    desired_order = ["组件", "故障", "原因", "解决方案"]
-    out_data = out_data.reindex(columns=desired_order)
-    out_data.to_excel('output.xlsx', index=False)
     return render_template('SearchBox.html',data=response,dict=map_index,relation=r_index)
 
 
@@ -135,27 +160,18 @@ def upload():
             req.form['ptext'+str(tn)]=row[0]
             tn+=1
     response, out_data = get_e_r(req)
-    map_index, r_index = get_mi(response)
+    map_index, r_index = get_mi(out_data)
     # 将set()转化为None
     for key in response:
         for er in response[key]:
             if len(response[key][er]) == 0:
                 response[key][er] = {}
-    # out_csv的处理部分
-    column_names = out_data.columns.tolist()
-    for m in ("组件", "故障", "解决方案", "原因"):
-        if m not in column_names:
-            out_data = out_data.assign(**{m: None})
-    out_data = out_data.drop_duplicates()
-    desired_order = ["组件", "故障", "原因", "解决方案"]
-    out_data = out_data.reindex(columns=desired_order)
-    out_data.to_excel('output.xlsx', index=False)
     return render_template('SearchBox.html', data=response, dict=map_index, relation=r_index)
 
 
 @app.route('/download')
 def download_file():
-    path = 'output.xlsx' # 替换成本地a.csv的文件路径
+    path = 'output.xlsx'
     return send_file(path, as_attachment=True)
 
 if __name__ == '__main__':
