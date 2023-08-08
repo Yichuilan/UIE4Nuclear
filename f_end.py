@@ -82,7 +82,11 @@ def get_e_r(req):
     out_data = out_data.drop_duplicates()
     desired_order = ["组件", "故障", "原因", "解决方案"]
     out_data = out_data.reindex(columns=desired_order)
+    out_data.rename(columns={'组件': '对象'}, inplace=True)
     out_data.to_excel('output.xlsx', index=False)
+    # 获取原来键的值
+    value = all['e'].pop('组件')
+    all['e']['对象'] = value
     return all,out_data
 
 def get_mi(out_data):
@@ -90,7 +94,7 @@ def get_mi(out_data):
     r_l=set()
     #["组件", "故障", "原因", "解决方案"]
     re_map=['存在','xx','导致','解决']
-    ent_map = ["组件", "xx", "原因", "解决方案"]
+    ent_map = ["对象", "xx", "原因", "解决方案"]
     #for ent
     for column_name, column_data in out_data.items():
         temp_set = set()
