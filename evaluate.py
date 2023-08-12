@@ -61,7 +61,6 @@ def evaluate(model, metric, data_loader, multilingual=False):
 def do_eval():
     paddle.set_device(args.device)
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-    import pdb;pdb.set_trace()
     if args.multi == 'False':
         args.multilingual = False
     else:
