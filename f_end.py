@@ -120,7 +120,7 @@ def get_mi(out_data):
 #关系有四种颜色
 @app.route('/')
 def home():
-    return render_template('Login.html')
+    return render_template('src/Login.html')
 @app.route('/login', methods=['POST'])
 def login():
     ##登录逻辑
@@ -161,7 +161,10 @@ def upload():
         for row in sheet.iter_rows(values_only=True):
             # row是一个列表，包含CSV文件的每一行数据
             # 在这里可以对每一行数据进行处理或保存等操作
-            req.form['ptext'+str(tn)]=row[0]
+            tt=row[0]
+            if not isinstance(tt, str):
+                tt=str(tt)
+            req.form['ptext'+str(tn)]=tt
             tn+=1
     response, out_data = get_e_r(req)
     map_index, r_index = get_mi(out_data)
