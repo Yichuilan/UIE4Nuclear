@@ -61,7 +61,8 @@ def evaluate(model, metric, data_loader, multilingual=False):
 def do_eval():
     paddle.set_device(args.device)
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-    if args.multi == False:
+    import pdb;pdb.set_trace()
+    if args.multi == 'False':
         args.multilingual = False
     else:
         args.multilingual = True
@@ -136,11 +137,11 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size per GPU/CPU/NPU for training.")
     parser.add_argument("--device", type=str, default="gpu", choices=["gpu", "cpu", "npu"], help="Device selected for evaluate.")
     parser.add_argument("--max_seq_len", type=int, default=512, help="The maximum total input sequence length after tokenization.")
-    parser.add_argument("--multi", type=bool,default=True, help="The control of multilingual.")
     parser.add_argument("--debug", action='store_true', help="Precision, recall and F1 score are calculated for each class separately if this option is enabled.")
     parser.add_argument("--multilingual", action='store_true', help="Whether is the multilingual model.")
     parser.add_argument("--schema_lang", choices=["ch", "en"], default="ch", help="Select the language type for schema.")
-    
+    parser.add_argument("--multi", type=str, default='True', help="The control of multilingual.")
+
     args = parser.parse_args()
     # yapf: enable
 
