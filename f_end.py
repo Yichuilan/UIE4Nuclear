@@ -120,7 +120,7 @@ def get_mi(out_data):
 #关系有四种颜色
 @app.route('/')
 def home():
-    return render_template('src/Login.html')
+    return render_template('Login.html')
 @app.route('/login', methods=['POST'])
 def login():
     ##登录逻辑
